@@ -4,15 +4,15 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/sightline-backend'
+      - 'us-east4-docker.pkg.dev/$PROJECT_ID/sightline-backend/sightline-backend'
       - '.'
     dir: 'backend'
 
-  # Step 2 — Push image to Container Registry
+  # Step 2 — Push image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/sightline-backend'
+      - 'us-east4-docker.pkg.dev/$PROJECT_ID/sightline-backend/sightline-backend'
 
   # Step 3 — Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -21,7 +21,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'sightline-backend'
-      - '--image=gcr.io/$PROJECT_ID/sightline-backend'
+      - '--image=us-east4-docker.pkg.dev/$PROJECT_ID/sightline-backend/sightline-backend'
       - '--region=us-east4'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -31,4 +31,4 @@ steps:
       - '--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
 
 images:
-  - 'gcr.io/$PROJECT_ID/sightline-backend'
+  - 'us-east4-docker.pkg.dev/$PROJECT_ID/sightline-backend/sightline-backend'
