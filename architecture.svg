@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520" font-family="monospace, sans-serif">
+  <!-- Background -->
+  <rect width="900" height="520" fill="#0a0a0c"/>
+
+  <!-- Title -->
+  <text x="450" y="38" text-anchor="middle" fill="#4aff9e" font-size="18" font-weight="bold" letter-spacing="3">SIGHTLINE — SYSTEM ARCHITECTURE</text>
+
+  <!-- ═══ BROWSER BOX ═══ -->
+  <rect x="30" y="70" width="220" height="360" rx="10" fill="none" stroke="#4aff9e" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="140" y="92" text-anchor="middle" fill="#4aff9e" font-size="11" letter-spacing="2">BROWSER / CLIENT</text>
+
+  <!-- Camera -->
+  <rect x="55" y="108" width="170" height="44" rx="6" fill="#1a2a1a" stroke="#4aff9e" stroke-width="1"/>
+  <text x="140" y="126" text-anchor="middle" fill="#ffffff" font-size="11">📷 Camera</text>
+  <text x="140" y="143" text-anchor="middle" fill="#6b7280" font-size="10">JPEG frames every 1.5s</text>
+
+  <!-- Microphone -->
+  <rect x="55" y="162" width="170" height="44" rx="6" fill="#1a2a1a" stroke="#4aff9e" stroke-width="1"/>
+  <text x="140" y="180" text-anchor="middle" fill="#ffffff" font-size="11">🎙️ Microphone</text>
+  <text x="140" y="197" text-anchor="middle" fill="#6b7280" font-size="10">PCM16 audio @ 16kHz</text>
+
+  <!-- Speaker -->
+  <rect x="55" y="216" width="170" height="44" rx="6" fill="#1a2a1a" stroke="#4aff9e" stroke-width="1"/>
+  <text x="140" y="234" text-anchor="middle" fill="#ffffff" font-size="11">🔊 Speaker</text>
+  <text x="140" y="251" text-anchor="middle" fill="#6b7280" font-size="10">PCM16 playback @ 24kHz</text>
+
+  <!-- Next.js -->
+  <rect x="55" y="270" width="170" height="44" rx="6" fill="#1a2a1a" stroke="#4aff9e" stroke-width="1"/>
+  <text x="140" y="288" text-anchor="middle" fill="#ffffff" font-size="11">⚛️  Next.js 14</text>
+  <text x="140" y="305" text-anchor="middle" fill="#6b7280" font-size="10">TypeScript · WebRTC</text>
+
+  <!-- WebSocket hook -->
+  <rect x="55" y="324" width="170" height="44" rx="6" fill="#1a2a1a" stroke="#4aff9e" stroke-width="1"/>
+  <text x="140" y="342" text-anchor="middle" fill="#ffffff" font-size="11">🔌 useWebSocket</text>
+  <text x="140" y="359" text-anchor="middle" fill="#6b7280" font-size="10">ping/pong keepalive</text>
+
+  <!-- ═══ ARROWS: Browser → WebSocket ═══ -->
+  <!-- Right arrow from browser box -->
+  <line x1="250" y1="250" x2="330" y2="250" stroke="#4aff9e" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="290" y="242" text-anchor="middle" fill="#4aff9e" font-size="9">frames + audio</text>
+
+  <!-- Left arrow from WebSocket to browser -->
+  <line x1="330" y1="270" x2="250" y2="270" stroke="#60efb4" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+  <text x="290" y="290" text-anchor="middle" fill="#60efb4" font-size="9">audio response</text>
+
+  <!-- ═══ FASTAPI BOX ═══ -->
+  <rect x="330" y="70" width="220" height="360" rx="10" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="440" y="92" text-anchor="middle" fill="#60a5fa" font-size="11" letter-spacing="2">FASTAPI BACKEND</text>
+
+  <!-- WebSocket endpoint -->
+  <rect x="355" y="108" width="170" height="44" rx="6" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1"/>
+  <text x="440" y="126" text-anchor="middle" fill="#ffffff" font-size="11">🔌 WebSocket /ws</text>
+  <text x="440" y="143" text-anchor="middle" fill="#6b7280" font-size="10">asyncio concurrent tasks</text>
+
+  <!-- Receive from client -->
+  <rect x="355" y="162" width="170" height="44" rx="6" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1"/>
+  <text x="440" y="180" text-anchor="middle" fill="#ffffff" font-size="11">📥 receive_from_client</text>
+  <text x="440" y="197" text-anchor="middle" fill="#6b7280" font-size="10">audio · video · text · ping</text>
+
+  <!-- Send to client -->
+  <rect x="355" y="216" width="170" height="44" rx="6" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1"/>
+  <text x="440" y="234" text-anchor="middle" fill="#ffffff" font-size="11">📤 send_to_client</text>
+  <text x="440" y="251" text-anchor="middle" fill="#6b7280" font-size="10">audio · text · turn_complete</text>
+
+  <!-- Keepalive -->
+  <rect x="355" y="270" width="170" height="44" rx="6" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1"/>
+  <text x="440" y="288" text-anchor="middle" fill="#ffffff" font-size="11">💓 keepalive task</text>
+  <text x="440" y="305" text-anchor="middle" fill="#6b7280" font-size="10">ping every 20s</text>
+
+  <!-- Gemini Service -->
+  <rect x="355" y="324" width="170" height="44" rx="6" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1"/>
+  <text x="440" y="342" text-anchor="middle" fill="#ffffff" font-size="11">🤖 GeminiLiveService</text>
+  <text x="440" y="359" text-anchor="middle" fill="#6b7280" font-size="10">session · send · receive</text>
+
+  <!-- ═══ ARROWS: FastAPI → Vertex AI ═══ -->
+  <line x1="550" y1="250" x2="630" y2="250" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrowYellow)"/>
+  <text x="590" y="242" text-anchor="middle" fill="#f59e0b" font-size="9">multimodal input</text>
+
+  <line x1="630" y1="270" x2="550" y2="270" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrowYellow)"/>
+  <text x="590" y="290" text-anchor="middle" fill="#f59e0b" font-size="9">audio + text out</text>
+
+  <!-- ═══ VERTEX AI / GCP BOX ═══ -->
+  <rect x="630" y="70" width="240" height="360" rx="10" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="750" y="92" text-anchor="middle" fill="#f59e0b" font-size="11" letter-spacing="2">GOOGLE CLOUD (us-east4)</text>
+
+  <!-- Vertex AI -->
+  <rect x="655" y="108" width="190" height="44" rx="6" fill="#2a1a0a" stroke="#f59e0b" stroke-width="1"/>
+  <text x="750" y="126" text-anchor="middle" fill="#ffffff" font-size="11">☁️  Vertex AI</text>
+  <text x="750" y="143" text-anchor="middle" fill="#6b7280" font-size="10">aiplatform.googleapis.com</text>
+
+  <!-- Gemini Live -->
+  <rect x="655" y="162" width="190" height="44" rx="6" fill="#2a1a0a" stroke="#f59e0b" stroke-width="1"/>
+  <text x="750" y="180" text-anchor="middle" fill="#ffffff" font-size="11">✨ Gemini Live API</text>
+  <text x="750" y="197" text-anchor="middle" fill="#6b7280" font-size="10">gemini-2.0-flash-live-001</text>
+
+  <!-- Modalities -->
+  <rect x="655" y="216" width="190" height="44" rx="6" fill="#2a1a0a" stroke="#f59e0b" stroke-width="1"/>
+  <text x="750" y="234" text-anchor="middle" fill="#ffffff" font-size="11">🎯 Multimodal Input</text>
+  <text x="750" y="251" text-anchor="middle" fill="#6b7280" font-size="10">image/jpeg · audio/pcm</text>
+
+  <!-- Voice -->
+  <rect x="655" y="270" width="190" height="44" rx="6" fill="#2a1a0a" stroke="#f59e0b" stroke-width="1"/>
+  <text x="750" y="288" text-anchor="middle" fill="#ffffff" font-size="11">🗣️ Voice: Aoede</text>
+  <text x="750" y="305" text-anchor="middle" fill="#6b7280" font-size="10">AUDIO response modality</text>
+
+  <!-- Turn complete -->
+  <rect x="655" y="324" width="190" height="44" rx="6" fill="#2a1a0a" stroke="#f59e0b" stroke-width="1"/>
+  <text x="750" y="342" text-anchor="middle" fill="#ffffff" font-size="11">🔄 Turn Management</text>
+  <text x="750" y="359" text-anchor="middle" fill="#6b7280" font-size="10">turn_complete → mic unmute</text>
+
+  <!-- ═══ BOTTOM LEGEND ═══ -->
+  <rect x="30" y="450" width="840" height="55" rx="8" fill="#111" stroke="#333" stroke-width="1"/>
+  <text x="55" y="470" fill="#4aff9e" font-size="10">● WebSocket (ws://)</text>
+  <text x="55" y="488" fill="#4aff9e" font-size="10">  Browser ↔ FastAPI (JSON + base64)</text>
+
+  <text x="260" y="470" fill="#60a5fa" font-size="10">● FastAPI (Python 3.11)</text>
+  <text x="260" y="488" fill="#60a5fa" font-size="10">  asyncio · uvicorn · websockets</text>
+
+  <text x="470" y="470" fill="#f59e0b" font-size="10">● Vertex AI gRPC/REST</text>
+  <text x="470" y="488" fill="#f59e0b" font-size="10">  google-genai SDK · ADC auth</text>
+
+  <text x="670" y="470" fill="#a78bfa" font-size="10">● Project: sightline-2026</text>
+  <text x="670" y="488" fill="#a78bfa" font-size="10">  Region: us-east4</text>
+
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#4aff9e"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#60efb4"/>
+    </marker>
+    <marker id="arrowYellow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+</svg>
