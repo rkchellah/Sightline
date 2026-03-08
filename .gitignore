@@ -33,6 +33,6 @@ Thumbs.db
 
 # Logs & test scripts
 *.log
-*.txt
+models_out.txt
 backend/test_*.py
 backend/list_vertex_models.py
