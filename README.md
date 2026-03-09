@@ -149,7 +149,7 @@ npm run dev
 
 ### Step 5 — Open the app
 
-Go to [[http://localhost:3000](http://localhost:3000)](https://sightline-frontend-59597652459.us-east4.run.app/)
+Go to (https://sightline-frontend-59597652459.us-east4.run.app/)
 
 Click **START** and grant camera and microphone access when prompted.
 
