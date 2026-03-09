@@ -8,7 +8,7 @@ export type WSMessage = {
   data: string
 }
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws'
+const WS_URL = 'wss://sightline-backend-59597652459.us-east4.run.app/ws'
 
 export function useWebSocket() {
   const [status, setStatus] = useState<WSStatus>('connecting')

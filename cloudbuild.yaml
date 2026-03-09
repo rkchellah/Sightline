@@ -1,7 +1,6 @@
 steps:
   # ── BACKEND ──────────────────────────────────────────────────────────────
 
-  # Step 1 — Build backend image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -10,13 +9,11 @@ steps:
       - '.'
     dir: 'backend'
 
-  # Step 2 — Push backend image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'us-east4-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/sightline-backend:latest'
 
-  # Step 3 — Deploy backend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -34,7 +31,6 @@ steps:
 
   # ── FRONTEND ─────────────────────────────────────────────────────────────
 
-  # Step 4 — Build frontend image with WS URL baked in at build time
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -45,13 +41,11 @@ steps:
       - '.'
     dir: 'frontend'
 
-  # Step 5 — Push frontend image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'us-east4-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/sightline-frontend:latest'
 
-  # Step 6 — Deploy frontend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
