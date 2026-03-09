@@ -20,6 +20,13 @@ SightLine is a voice-first accessibility app that uses your device camera and mi
 
 ---
 
+## Live Deployment
+
+**Frontend:** https://sightline-frontend-59597652459.us-east4.run.app
+**Backend API:** https://sightline-backend-59597652459.us-east4.run.app/docs
+
+---
+
 ## Proof of Google Cloud Deployment
 
 The project uses **Vertex AI** (`aiplatform.googleapis.com`) in region `us-east4` via Application Default Credentials.
@@ -158,7 +165,7 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
 
 For production (Cloud Run), set:
 ```env
-NEXT_PUBLIC_WS_URL=wss://your-cloud-run-url/ws
+NEXT_PUBLIC_WS_URL=wss://sightline-backend-59597652459.us-east4.run.app/ws
 ```
 
 ---
@@ -222,3 +229,5 @@ The key engineering challenge was preventing Gemini from hearing its own voice e
 ## License
 
 MIT
+
+
