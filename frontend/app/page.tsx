@@ -9,7 +9,7 @@ import { AudioVisualizer } from '@/components/AudioVisualizer';
 import { VoiceOverlay } from '@/components/VoiceOverlay';
 
 export default function Home() {
-  const { videoRef, isListening, startCamera, stopCamera, captureFrame, getAudioStream } = useCamera();
+  const { videoRef, isListening, facingMode, startCamera, stopCamera, toggleCamera, captureFrame, getAudioStream } = useCamera();
   const { isConnected, sendAudio, sendFrame, messages } = useWebSocket();
   const { playAudio, isSpeaking, isSpeakingRef } = useAudioPlayer();
 
@@ -337,6 +337,8 @@ export default function Home() {
           padding:13px 44px; border-radius:999px; cursor:pointer; transition:all 0.35s ease;
         }
         .sl-stop-btn:hover { border-color:#ef4444; background:rgba(239,68,68,0.07); }
+        .sl-flip-btn { background:transparent; border:1px solid rgba(255,255,255,0.2); color:#fff; padding:10px 18px; border-radius:50px; font-size:11px; letter-spacing:2px; cursor:pointer; transition:all 0.2s; }
+        .sl-flip-btn:hover { border-color:rgba(255,255,255,0.5); }
 
         /* ✅ Blue border when Gemini speaks */
         .sl-speak-border {
@@ -467,6 +469,7 @@ export default function Home() {
             )}
             <div style={{ position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
               <button className="sl-stop-btn" onClick={handleStop}>STOP</button>
+              <button className="sl-flip-btn" onClick={toggleCamera}>{facingMode === 'environment' ? 'FRONT CAM' : 'BACK CAM'}</button>
             </div>
           </>
         )}
@@ -476,3 +479,6 @@ export default function Home() {
     </>
   );
 }
+
+
+

@@ -8,8 +8,8 @@ export function useCamera(onAudioChunk?: (base64: string) => void) {
   const processorRef = useRef<ScriptProcessorNode | null>(null)
   const [isActive, setIsActive] = useState(false)
   const [isListening, setIsListening] = useState(false)
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
 
-  // Attach stream to video element after it mounts
   useEffect(() => {
     if (!isActive || !streamRef.current) return
     const video = videoRef.current
@@ -21,36 +21,26 @@ export function useCamera(onAudioChunk?: (base64: string) => void) {
 
   const startAudioCapture = useCallback((stream: MediaStream) => {
     if (!onAudioChunk) return
-
     try {
       const audioContext = new AudioContext({ sampleRate: 16000 })
       audioContextRef.current = audioContext
-
       const source = audioContext.createMediaStreamSource(stream)
-      // 4096 buffer, 1 input channel, 1 output channel
       const processor = audioContext.createScriptProcessor(4096, 1, 1)
       processorRef.current = processor
-
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0)
-
-        // Convert float32 → PCM16
         const pcm16 = new Int16Array(inputData.length)
         for (let i = 0; i < inputData.length; i++) {
           const s = Math.max(-1, Math.min(1, inputData[i]))
           pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff
         }
-
-        // Convert to base64
         const bytes = new Uint8Array(pcm16.buffer)
         let binary = ''
         for (let i = 0; i < bytes.byteLength; i++) {
           binary += String.fromCharCode(bytes[i])
         }
-        const base64 = btoa(binary)
-        onAudioChunk(base64)
+        onAudioChunk(btoa(binary))
       }
-
       source.connect(processor)
       processor.connect(audioContext.destination)
     } catch (err) {
@@ -58,10 +48,11 @@ export function useCamera(onAudioChunk?: (base64: string) => void) {
     }
   }, [onAudioChunk])
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (mode?: 'user' | 'environment') => {
+    const selectedMode = mode || facingMode
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: selectedMode },
         audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
       })
       streamRef.current = stream
@@ -72,22 +63,28 @@ export function useCamera(onAudioChunk?: (base64: string) => void) {
       console.error('Camera error:', err)
       throw err
     }
-  }, [startAudioCapture])
+  }, [facingMode, startAudioCapture])
 
   const stopCamera = useCallback(() => {
-    // Stop audio processor
     processorRef.current?.disconnect()
     processorRef.current = null
     audioContextRef.current?.close()
     audioContextRef.current = null
-
-    // Stop media tracks
     streamRef.current?.getTracks().forEach(t => t.stop())
     streamRef.current = null
     if (videoRef.current) videoRef.current.srcObject = null
     setIsActive(false)
     setIsListening(false)
   }, [])
+
+  const toggleCamera = useCallback(async () => {
+    const newMode = facingMode === 'user' ? 'environment' : 'user'
+    setFacingMode(newMode)
+    if (isActive) {
+      stopCamera()
+      setTimeout(() => startCamera(newMode), 300)
+    }
+  }, [facingMode, isActive, stopCamera, startCamera])
 
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current
@@ -103,5 +100,5 @@ export function useCamera(onAudioChunk?: (base64: string) => void) {
 
   const getAudioStream = useCallback(() => streamRef.current, [])
 
-  return { videoRef, isActive, isListening, startCamera, stopCamera, captureFrame, getAudioStream }
+  return { videoRef, isActive, isListening, facingMode, startCamera, stopCamera, toggleCamera, captureFrame, getAudioStream }
 }
