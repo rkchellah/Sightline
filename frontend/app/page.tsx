@@ -242,6 +242,7 @@ export default function Home() {
         .sl-nav {
           position:fixed; top:0; left:0; right:0; padding:26px 36px;
           display:flex; align-items:center; justify-content:space-between;
+          flex-wrap:wrap; gap:6px;
           z-index:100; animation:slideUp 1s ease 0.3s both;
         }
         .sl-nav-logo { display:flex; align-items:center; gap:10px; }
@@ -252,24 +253,16 @@ export default function Home() {
         .sl-nav-right {
           font-family:'DM Mono',monospace; font-size:0.55rem; letter-spacing:0.22em;
           color:rgba(255,255,255,0.2); text-transform:uppercase;
+          display:none;
         }
+        @media(min-width:520px){ .sl-nav-right { display:block; } }
         .sl-session-status {
           position:fixed; top:26px; left:36px;
           display:flex; align-items:center; gap:10px; z-index:100;
         }
-        .sl-live-indicator {
-          position:fixed; top:26px; right:36px;
-          display:flex; align-items:center; gap:6px;
-          z-index:100; transition:opacity 0.4s ease;
-        }
-        .sl-live-dot {
-          width:7px; height:7px; border-radius:50%; background:#ff4444;
-          animation:livePulse 1.2s ease-in-out infinite;
-        }
-        .sl-live-label {
-          font-family:'DM Mono',monospace; font-size:0.55rem;
-          letter-spacing:0.28em; color:#ff4444; text-transform:uppercase;
-        }
+        .sl-live-indicator { position:fixed; top:20px; right:20px; display:flex; align-items:center; gap:6px; z-index:100; background:rgba(0,0,0,0.55); border:1px solid rgba(255,68,68,0.5); padding:5px 12px; border-radius:999px; transition:opacity 0.4s ease; }
+        .sl-live-dot { width:7px; height:7px; border-radius:50%; background:#ff4444; flex-shrink:0; animation:livePulse 1.2s ease-in-out infinite; }
+        .sl-live-label { font-family:'DM Mono',monospace; font-size:0.55rem; letter-spacing:0.28em; color:#ff6666; text-transform:uppercase; }
         .sl-content {
           position:relative; z-index:20;
           display:flex; flex-direction:column; align-items:center; text-align:center;
