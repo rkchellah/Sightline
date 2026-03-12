@@ -209,6 +209,7 @@ export default function Home() {
           pointer-events:none; z-index:10;
         }
         .sl-eye-bg { position:absolute; top:95%; left:80%; pointer-events:none; z-index:1; }
+        @media(max-width:600px){ .sl-eye-bg { display:none; } }
         .sl-iris-glow {
           position:absolute; top:50%; left:50%; width:500px; height:500px; border-radius:50%;
           background:radial-gradient(circle,rgba(74,255,158,0.06) 0%,transparent 65%);
@@ -475,4 +476,5 @@ export default function Home() {
     </>
   );
 }
+
 
