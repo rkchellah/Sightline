@@ -414,7 +414,7 @@ export default function Home() {
 
         {/* LIVE badge — top right, only when Gemini speaks */}
         {isSessionActive && (
-          <div className="sl-live-indicator" style={{ opacity: isSpeaking ? 1 : 0 }}>
+          <div className="sl-live-indicator" style={{ opacity: isSpeaking ? 1 : 0.25 }}>
             <div className="sl-live-dot" />
             <span className="sl-live-label">Live</span>
           </div>
@@ -436,9 +436,6 @@ export default function Home() {
                 {isConnected ? 'READY' : 'CONNECTING...'}
               </span>
             </div>
-            <button className="sl-cam-toggle" onClick={toggleCamera}>
-              {facingMode === 'environment' ? '📷 BACK CAMERA — tap for front' : '🤳 FRONT CAMERA — tap for back'}
-            </button>
             <div className="sl-btn-wrap">
               <button className="sl-start-btn" onClick={handleStart} disabled={!isConnected}>
                 START
