@@ -337,8 +337,10 @@ export default function Home() {
           padding:13px 44px; border-radius:999px; cursor:pointer; transition:all 0.35s ease;
         }
         .sl-stop-btn:hover { border-color:#ef4444; background:rgba(239,68,68,0.07); }
-        .sl-flip-btn { background:transparent; border:1px solid rgba(255,255,255,0.2); color:#fff; padding:10px 18px; border-radius:50px; font-size:11px; letter-spacing:2px; cursor:pointer; transition:all 0.2s; }
-        .sl-flip-btn:hover { border-color:rgba(255,255,255,0.5); }
+
+        .sl-controls { position:fixed; bottom:36px; left:50%; transform:translateX(-50%); display:flex; flex-direction:row; align-items:center; justify-content:center; gap:12px; z-index:100; }
+        .sl-flip-btn { font-family:'DM Mono',monospace; font-size:0.65rem; letter-spacing:0.3em; text-transform:uppercase; background:transparent; border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.7); padding:13px 28px; border-radius:999px; cursor:pointer; transition:all 0.3s ease; white-space:nowrap; }
+        .sl-cam-toggle { font-family:'DM Mono',monospace; font-size:0.58rem; letter-spacing:0.22em; text-transform:uppercase; background:transparent; border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.5); padding:9px 22px; border-radius:999px; cursor:pointer; transition:all 0.3s ease; margin-bottom:16px; }
 
         /* ✅ Blue border when Gemini speaks */
         .sl-speak-border {
@@ -423,8 +425,7 @@ export default function Home() {
           <div className="sl-content">
             <h1 className="sl-title">SightLine</h1>
             <p className="sl-tagline">
-              An AI companion that <em>sees your world</em><br />
-              and describes it — in real time, through your voice.
+              An AI companion that <em>sees your world</em> and describes it — in real time, through your voice.
             </p>
             <div className="sl-status">
               <div className="sl-dot-wrap">
@@ -435,6 +436,9 @@ export default function Home() {
                 {isConnected ? 'READY' : 'CONNECTING...'}
               </span>
             </div>
+            <button className="sl-cam-toggle" onClick={toggleCamera}>
+              {facingMode === 'environment' ? '📷 BACK CAMERA — tap for front' : '🤳 FRONT CAMERA — tap for back'}
+            </button>
             <div className="sl-btn-wrap">
               <button className="sl-start-btn" onClick={handleStart} disabled={!isConnected}>
                 START
@@ -467,9 +471,11 @@ export default function Home() {
                 </div>
               </>
             )}
-            <div style={{ position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
+            <div className="sl-controls">
               <button className="sl-stop-btn" onClick={handleStop}>STOP</button>
-              <button className="sl-flip-btn" onClick={toggleCamera}>{facingMode === 'environment' ? 'FRONT CAM' : 'BACK CAM'}</button>
+              <button className="sl-flip-btn" onClick={toggleCamera}>
+                {facingMode === 'environment' ? 'FRONT CAM' : 'BACK CAM'}
+              </button>
             </div>
           </>
         )}
@@ -479,6 +485,3 @@ export default function Home() {
     </>
   );
 }
-
-
-
