@@ -261,7 +261,7 @@ export default function Home() {
           position:fixed; top:26px; left:36px;
           display:flex; align-items:center; gap:10px; z-index:100;
         }
-        .sl-live-indicator { position:fixed; top:20px; right:20px; display:flex; align-items:center; gap:6px; z-index:100; background:#000; border:1px solid #ff4444; padding:5px 12px; border-radius:999px; transition:opacity 0.4s ease; }
+        .sl-live-indicator { position:fixed; top:32px; right:20px; display:flex; align-items:center; gap:6px; z-index:100; background:#000; border:1px solid #ff4444; padding:5px 12px; border-radius:999px; transition:opacity 0.4s ease; }
         .sl-live-dot { width:7px; height:7px; border-radius:50%; background:#ff4444; flex-shrink:0; animation:livePulse 1.2s ease-in-out infinite; }
         .sl-live-label { font-family:'DM Mono',monospace; font-size:0.55rem; letter-spacing:0.28em; color:#ff6666; text-transform:uppercase; }
         .sl-content {
