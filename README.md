@@ -1,4 +1,4 @@
-# SightLine 👁️
+# SightLine
 
 > **Real-time AI accessibility companion powered by Gemini Live**  
 > *Gemini Live Agent Challenge 2026 — Live Agent Category*
