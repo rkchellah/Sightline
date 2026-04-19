@@ -221,7 +221,7 @@ The key engineering challenge was preventing Gemini from hearing its own voice e
 - **Category:** Live Agent (Real-time Audio/Vision)
 - **Mandatory Tech Used:** Gemini Live API, Google GenAI SDK, Vertex AI (Google Cloud)
 - **GDG Profile:** https://gdg.community.dev/u/mzntqb/#/about
-- **Devpost:** SightLine — Gemini Live Agent Challenge 2026](https://devpost.com/rkchellah?ref_content=user-portfolio&ref_feature=portfolio&ref_medium=global-nav)
+- **Devpost:** [SightLine — Gemini Live Agent Challenge 2026](https://devpost.com/rkchellah?ref_content=user-portfolio&ref_feature=portfolio&ref_medium=global-nav)
 - **Demo Video:** [Watch the demo on YouTube](https://www.youtube.com/watch?v=hW1gJ22O3Zs)
 
 ---
