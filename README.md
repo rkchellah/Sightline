@@ -1,37 +1,99 @@
 # SightLine
 
-> **Real-time AI accessibility companion powered by Gemini Live**  
-> *Gemini Live Agent Challenge 2026 — Live Agent Category*
-
-SightLine is a voice-first accessibility app that uses your device camera and microphone to help visually impaired users understand their world in real time. Powered by Google's Gemini Live API via Vertex AI, it sees what your camera points at and describes it naturally through voice — answering follow-up questions, reading text aloud, identifying objects, and warning of hazards, all in one continuous live conversation.
 
 ---
 
-## Architecture Diagram
+**A real-time AI visual companion for visually impaired users, built on Gemini Live.**
+
+Most AI accessibility tools work in batch. You take a photo, wait a few seconds, get a description, and ask your follow-up into the void. By the time the answer comes back, the moment is gone — you've already crossed the street, missed the sign, lost the conversation.
+
+SightLine runs continuously. Point your camera, speak naturally, and Gemini sees what you see and talks back in real time. Not a request-response loop. An actual live conversation — with context, follow-ups, and no manual triggers.
+
+---
+
+## Live Demo
+
+**App:** https://sightline-frontend-59597652459.us-east4.run.app  
+**API docs:** https://sightline-backend-59597652459.us-east4.run.app/docs  
+**Demo video:** [Watch on YouTube](https://www.youtube.com/watch?v=hW1gJ22O3Zs)
+
+---
+
+## What it does
+
+```
+"What's in front of me? Is there anything I should be careful of?"
+```
+
+One continuous WebSocket session handles everything:
+
+1. **Camera frames** — JPEG snapshots sent to Gemini every 1.5 seconds
+2. **Mic audio** — PCM16 at 16kHz, streamed from the browser in real time
+3. **Gemini Live** — sees the frames, hears the question, responds in voice
+4. **Audio playback** — PCM16 at 24kHz, played back through the browser
+5. **Turn management** — mic mutes while Gemini speaks, reopens on `turn_complete`
+
+No manual button presses. No waiting for a full response before you can speak again. The session stays open until you close it.
+
+---
+
+## Architecture
 
 ![SightLine Architecture](./architecture.svg)
 
-**How it works:**
-1. The browser streams JPEG camera frames (every 1.5s) and PCM16 mic audio (16kHz) over a WebSocket to the FastAPI backend
-2. The backend forwards both to Gemini Live (`gemini-2.0-flash-live-001`) via Vertex AI using the Google GenAI SDK
-3. Gemini responds with PCM16 audio (24kHz) which the backend streams back to the browser for playback
-4. On `turn_complete`, the mic unmutes and the user can speak again — enabling true multi-turn conversation
-5. A ping/pong keepalive task on both ends keeps the WebSocket alive during long sessions
+The browser streams camera and mic data over WebSocket to a FastAPI backend. The backend forwards both to Gemini Live on Vertex AI using the Google GenAI SDK. Gemini's audio response streams back through the same WebSocket for immediate playback. A ping/pong keepalive task on both ends prevents proxy timeouts during long sessions.
 
 ---
 
-## Live Deployment
+## Running locally
 
-**Frontend:** https://sightline-frontend-59597652459.us-east4.run.app
-**Backend API:** https://sightline-backend-59597652459.us-east4.run.app/docs
+```bash
+git clone https://github.com/rkchellah/sightline.git
+cd sightline
+```
+
+**Backend:**
+
+```bash
+cd backend
+python -m venv .venv
+
+# Windows
+.venv\Scripts\Activate.ps1
+# Mac/Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+**Frontend** (second terminal):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Create `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+```
+
+Open http://localhost:3000, click **START**, grant camera and mic access.
 
 ---
 
-## Proof of Google Cloud Deployment
+## Google Cloud setup
 
-The project uses **Vertex AI** (`aiplatform.googleapis.com`) in region `us-east4` via Application Default Credentials.
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project sightline-2026
+gcloud services enable aiplatform.googleapis.com --project=sightline-2026
+```
 
-See: [`backend/app/services/gemini_service.py`](./backend/app/services/gemini_service.py)
+The backend connects to Vertex AI via Application Default Credentials — no API keys in the codebase.
 
 ```python
 self.client = genai.Client(
@@ -41,193 +103,58 @@ self.client = genai.Client(
 )
 ```
 
-And: [`backend/app/core/config.py`](./backend/app/core/config.py)
+---
 
-```python
-google_cloud_project: str = "sightline-2026"
-google_cloud_location: str = "us-east4"
-model_name: str = "gemini-2.0-flash-live-001"
-```
+## Stack
+
+- **Frontend**: Next.js 14, TypeScript, WebRTC
+- **Backend**: FastAPI, Python 3.11, asyncio
+- **AI**: Gemini Live (`gemini-2.0-flash-live-001`) via Vertex AI
+- **Auth**: Application Default Credentials (no exposed keys)
+- **Transport**: WebSocket — JSON + base64 encoded audio
+- **Hosting**: Google Cloud Run, region `us-east4`
 
 ---
 
-## Features
-
-- 🎙️ **Live voice conversation** — natural multi-turn dialogue with Gemini
-- 📸 **Real-time camera analysis** — JPEG frames sent continuously to Gemini Live
-- 🔊 **Audio responses** — Gemini speaks back using the Aoede voice
-- 🔇 **Echo prevention** — mic mutes while Gemini speaks via `isSpeakingRef`, reopens on `turn_complete`
-- 🔴 **Live indicator** — pulsing red dot appears when Gemini is actively speaking
-- 💓 **WebSocket keepalive** — ping/pong heartbeat every 20s prevents proxy timeouts
-- ♿ **Accessibility-first** — built for visually impaired users
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 14, TypeScript, WebRTC |
-| Backend | FastAPI, Python 3.11, asyncio |
-| AI Model | `gemini-2.0-flash-live-001` |
-| AI SDK | Google GenAI SDK (`google-genai`) |
-| Cloud | Google Cloud Vertex AI, region `us-east4` |
-| Auth | Application Default Credentials (ADC) |
-| Transport | WebSocket (JSON + base64) |
-
----
-
-## Getting Started (Spin-up Instructions)
-
-### Prerequisites
-
-- Node.js 18+
-- Python 3.11+
-- Google Cloud account with billing enabled
-- `gcloud` CLI installed → [Install guide](https://cloud.google.com/sdk/docs/install)
-
-### Step 1 — Clone the repo
-
-```bash
-git clone https://github.com/rkchellah/sightline.git
-cd sightline
-```
-
-### Step 2 — Authenticate with Google Cloud
-
-```bash
-# Login
-gcloud auth application-default login
-
-# Set quota project (replace with your GCP project ID if different)
-gcloud auth application-default set-quota-project sightline-2026
-
-# Enable Vertex AI API
-gcloud services enable aiplatform.googleapis.com --project=sightline-2026
-```
-
-### Step 3 — Backend setup
-
-```bash
-cd backend
-
-# Create virtual environment
-python -m venv .venv
-
-# Activate — Windows PowerShell
-.venv\Scripts\Activate.ps1
-
-# Activate — Mac/Linux
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the backend server
-python -m uvicorn app.main:app --reload --port 8000
-```
-
-You should see:
-```
-✅ Project: sightline-2026 | Model: gemini-2.0-flash-live-001
-INFO: Uvicorn running on http://0.0.0.0:8000
-```
-
-### Step 4 — Frontend setup
-
-Open a second terminal:
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start the dev server
-npm run dev
-```
-
-### Step 5 — Open the app
-
-Go to (http://localhost:3000)
-
-Click **START** and grant camera and microphone access when prompted.
-
----
-
-## Environment Variables
-
-Create a `.env.local` file in the `frontend/` directory:
-
-```env
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
-```
-
-For production (Cloud Run), set:
-```env
-NEXT_PUBLIC_WS_URL=wss://sightline-backend-59597652459.us-east4.run.app/ws
-```
-
----
-
-## Project Structure
+## Project structure
 
 ```
 sightline/
-├── architecture.svg              # System architecture diagram
-├── README.md
-│
 ├── backend/
-│   ├── requirements.txt
 │   └── app/
-│       ├── main.py               # FastAPI app entry point
-│       ├── api/
-│       │   └── websocket.py      # WebSocket handler + keepalive task
-│       ├── core/
-│       │   └── config.py         # GCP project + model config
-│       └── services/
-│           └── gemini_service.py # Gemini Live session + turn management
-│
+│       ├── main.py               — FastAPI entry point
+│       ├── api/websocket.py      — WebSocket handler + keepalive
+│       ├── core/config.py        — GCP project + model config
+│       └── services/gemini_service.py  — Gemini Live session + turn management
 └── frontend/
-    ├── app/
-    │   └── page.tsx              # Main UI + session logic
+    ├── app/page.tsx              — Main UI + session logic
     ├── components/
-    │   ├── CameraView.tsx        # Camera feed display
-    │   ├── AudioVisualizer.tsx   # Audio activity indicator
-    │   └── VoiceOverlay.tsx      # Gemini text overlay
+    │   ├── CameraView.tsx
+    │   ├── AudioVisualizer.tsx
+    │   └── VoiceOverlay.tsx
     └── hooks/
-        ├── useCamera.ts          # Camera + mic stream management
-        ├── useWebSocket.ts       # WebSocket client + ping/pong keepalive
-        └── useAudioPlayer.ts     # PCM audio queue + isSpeakingRef (mic mute logic)
+        ├── useCamera.ts          — Camera + mic stream management
+        ├── useWebSocket.ts       — WebSocket client + ping/pong keepalive
+        └── useAudioPlayer.ts     — PCM audio queue + mic mute logic
 ```
 
 ---
 
-## How the Multi-turn Conversation Works
+## What I learned building this
 
-The key engineering challenge was preventing Gemini from hearing its own voice echoed back through the mic (which silences it permanently).
+Three problems that weren't in any tutorial.
 
-**Solution:**
-1. `useAudioPlayer.ts` exposes `isSpeakingRef` — a React ref (not state) that always holds the live speaking value
-2. The `ScriptProcessorNode` checks `isSpeakingRef.current` on every audio frame — if true, the frame is dropped
-3. The backend detects `turn_complete` from Gemini's response stream and sends it to the frontend
-4. When `turn_complete` arrives, `isSpeakingRef.current` is set to `false` and the mic opens again
+**Gemini hears itself if you don't mute the mic during playback.** When Gemini speaks, its audio comes out of the browser speaker. The mic picks that up, sends it back to Gemini, and the session breaks — Gemini hears its own voice mid-sentence and goes silent permanently. The fix was `isSpeakingRef` in `useAudioPlayer.ts` — a React ref, not state, because refs hold the live value synchronously. The `ScriptProcessorNode` checks `isSpeakingRef.current` on every audio frame; if Gemini is speaking, the frame is dropped before it ever reaches the WebSocket. When the backend detects `turn_complete` in Gemini's response stream, it sends that signal to the frontend, which sets `isSpeakingRef.current = false` and reopens the mic. The reason it has to be a ref and not state is that the audio processor callback captures a stale closure — state updates wouldn't be visible inside it, but a ref always is.
+
+**WebSocket connections to Cloud Run die without a heartbeat.** Cloud Run sits behind a Google-managed proxy with a 60-second idle timeout. A long conversation with natural pauses — the user thinking, Gemini processing — can easily go quiet for more than a minute. The connection drops with no error, just silence. Fixed it with a ping/pong task on both the backend and the browser client, running every 20 seconds, keeping the connection alive regardless of what the conversation is doing.
+
+**Tested on a real user, not a simulator.** Pointed the running app at a family member's phone over a video call. Gemini correctly identified medications in their hand from the camera feed. It also correctly declined to give specific dosage advice — which was the right call, but it meant the app needed better prompting to guide users toward asking safe questions. That feedback came from actual use, not from me testing it on my desk.
 
 ---
 
-## Hackathon Submission
+## Hackathon
 
 - **Challenge:** Gemini Live Agent Challenge 2026
 - **Category:** Live Agent (Real-time Audio/Vision)
-- **Mandatory Tech Used:** Gemini Live API, Google GenAI SDK, Vertex AI (Google Cloud)
+- **Devpost:** [SightLine submission](https://devpost.com/rkchellah)
 - **GDG Profile:** https://gdg.community.dev/u/mzntqb/#/about
-- **Devpost:** [SightLine - Gemini Live Agent Challenge 2026](https://devpost.com/rkchellah?ref_content=user-portfolio&ref_feature=portfolio&ref_medium=global-nav)
-- **Demo Video:** [Watch the demo on YouTube](https://www.youtube.com/watch?v=hW1gJ22O3Zs)
-
----
-
-## License
-
-MIT
-
-
