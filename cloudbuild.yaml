@@ -27,7 +27,7 @@ steps:
       - '--port=8080'
       - '--memory=512Mi'
       - '--timeout=300'
-      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-east4'
+      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1'
 
   # ── FRONTEND ─────────────────────────────────────────────────────────────
 

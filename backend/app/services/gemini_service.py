@@ -19,8 +19,8 @@ class GeminiLiveService:
     def __init__(self):
         self.client = genai.Client(
             vertexai=True,
-            project="sightline-2026",
-            location="us-east4"
+            project=settings.google_cloud_project,
+            location=settings.google_cloud_location
         )
         self.model = settings.model_name
 
