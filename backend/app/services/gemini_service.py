@@ -1,19 +1,37 @@
 from google import genai
 from google.genai import types
 from app.core.config import settings
+from app.services.memory_service import memory_service
 from contextlib import asynccontextmanager
 import base64
 
-SYSTEM_PROMPT = """You are SightLine, a warm and reliable real-time accessibility companion for blind and visually impaired users. You are their eyes.
+SYSTEM_PROMPT = """You are a warm, helpful AI companion that can see
+through the camera and hear the user in real time.
 
-When observing through the camera:
-- Describe scenes clearly and concisely as if the user cannot see at all
-- Read all visible text aloud exactly as written
-- Identify objects, people, and environments in plain, useful language
-- Proactively warn of hazards — steps, obstacles, traffic
-- Answer follow-up questions directly and briefly
+You have two memory tools:
+- Call remember_this only when the user explicitly asks you to
+  remember something (e.g. "remember this", "remember that object",
+  "don't forget") or clearly shares personal info meant to be kept.
+  When remembering something you just saw, save a specific,
+  self-contained description of that object/scene, not a vague note.
+  After the tool returns, you MUST speak a brief, natural
+  confirmation out loud, e.g. "Got it — I'll remember that your
+  favorite color is blue." Never stay silent after remembering.
+- Call recall_memories only when the user references something from
+  an earlier conversation or asks about something you may have saved
+  (e.g. "what's my favorite color", "what was that thing I mentioned
+  earlier", "tell me more about that"). After the tool returns, you
+  MUST answer the user's question out loud using what was found, or
+  say you don't have that saved if nothing was found. Do NOT call it
+  automatically at the start of a conversation or for routine scene
+  descriptions — only when clearly relevant.
 
-Speak naturally, like a trusted friend describing the scene. Never hallucinate. Only describe what is actually visible."""
+When describing what the camera sees: be clear, concise, and
+proactive about hazards.
+When answering questions: be direct and brief.
+Do not describe the mechanics of your memory tools (databases,
+lookups, saving) — just respond naturally, but always respond with
+speech after using a tool."""
 
 class GeminiLiveService:
     def __init__(self):
@@ -25,7 +43,38 @@ class GeminiLiveService:
         self.model = settings.model_name
 
     @asynccontextmanager
-    async def connect(self):
+    async def connect(self, user_id: str = "anonymous"):
+        async def remember_this(fact: str) -> str:
+            """Save a short piece of personal information the user wants
+            you to remember for future conversations — e.g. a place, a
+            person, a preference, a routine, or a specific object/scene
+            they just asked you to remember.
+
+            Args:
+                fact: The information to remember, written as a short,
+                    self-contained statement.
+            """
+            await memory_service.save_memory(user_id, fact)
+            print(f"🧠 memory_saved: {fact}")
+            return "Saved."
+
+        async def recall_memories(query: str) -> str:
+            """Search the user's saved memories for information relevant
+            to the current conversation or the topic they want to go
+            deeper on.
+
+            Args:
+                query: What to search for in the user's memories.
+            """
+            results = await memory_service.search_memories(user_id, query)
+            print(f"🧠 memory_recalled: {results}")
+            return "\n".join(results) if results else "No relevant memories found."
+
+        tool_handlers = {
+            "remember_this": remember_this,
+            "recall_memories": recall_memories,
+        }
+
         config = types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             system_instruction=types.Content(
@@ -35,20 +84,22 @@ class GeminiLiveService:
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                        voice_name="Aoede"
+                        voice_name="Zephyr"
                     )
                 )
             ),
+            tools=[remember_this, recall_memories],
         )
         async with self.client.aio.live.connect(
             model=self.model, config=config
         ) as session:
-            yield GeminiSession(session)
+            yield GeminiSession(session, tool_handlers)
 
 
 class GeminiSession:
-    def __init__(self, session):
+    def __init__(self, session, tool_handlers: dict | None = None):
         self.session = session
+        self.tool_handlers = tool_handlers or {}
 
     async def send_audio(self, audio_bytes: bytes):
         await self.session.send(
@@ -68,31 +119,61 @@ class GeminiSession:
         await self.session.send(input=text, end_of_turn=True)
 
     async def receive(self):
+        # The SDK's session.receive() is a ONE-TURN generator: it breaks as
+        # soon as the server sends turn_complete. We must re-enter it in a
+        # loop, otherwise the session dies after the first turn and any
+        # response generated after a tool call (a new turn) is never read.
         try:
-            async for response in self.session.receive():
-                if not hasattr(response, "server_content"):
-                    continue
+            while True:
+                async for response in self.session.receive():
+                    if getattr(response, "tool_call", None):
+                        function_responses = []
+                        for fc in response.tool_call.function_calls:
+                            handler = self.tool_handlers.get(fc.name)
+                            result = (
+                                await handler(**(fc.args or {}))
+                                if handler
+                                else "Unknown tool."
+                            )
+                            function_responses.append(
+                                types.FunctionResponse(
+                                    id=fc.id,
+                                    name=fc.name,
+                                    response={"result": result},
+                                    # Make the model speak about the tool
+                                    # result immediately.
+                                    scheduling=types.FunctionResponseScheduling.INTERRUPT,
+                                )
+                            )
+                        if function_responses:
+                            await self.session.send_tool_response(
+                                function_responses=function_responses
+                            )
+                        continue
 
-                sc = response.server_content
-                if not sc:
-                    continue
+                    if not hasattr(response, "server_content"):
+                        continue
 
-                # Detect when Gemini finishes its turn — send signal to frontend
-                # This tells the frontend to resume mic input
-                if sc.turn_complete:
-                    print("Gemini turn complete")
-                    yield {"type": "turn_complete", "data": ""}
-                    continue
+                    sc = response.server_content
+                    if not sc:
+                        continue
 
-                if not sc.model_turn:
-                    continue
+                    # Turn finished — tell the frontend to resume mic input,
+                    # then loop back into session.receive() for the next turn.
+                    if sc.turn_complete:
+                        print("Gemini turn complete")
+                        yield {"type": "turn_complete", "data": ""}
+                        continue
 
-                for part in sc.model_turn.parts:
-                    if getattr(part, "text", None):
-                        yield {"type": "text", "data": part.text}
-                    if getattr(part, "inline_data", None):
-                        audio_b64 = base64.b64encode(part.inline_data.data).decode()
-                        yield {"type": "audio", "data": audio_b64}
+                    if not sc.model_turn:
+                        continue
+
+                    for part in sc.model_turn.parts:
+                        if getattr(part, "text", None):
+                            yield {"type": "text", "data": part.text}
+                        if getattr(part, "inline_data", None):
+                            audio_b64 = base64.b64encode(part.inline_data.data).decode()
+                            yield {"type": "audio", "data": audio_b64}
 
         except Exception as e:
             print(f"Gemini receive error: {e}")

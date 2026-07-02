@@ -8,7 +8,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://sightline-frontend-59597652459.us-east4.run.app",
+        "https://sightline-frontend-59597652459.europe-west1.run.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],

@@ -66,3 +66,6 @@ class MemoryService:
         )
         results = await vector_query.get()
         return [doc.to_dict()["text"] for doc in results]
+
+
+memory_service = MemoryService()

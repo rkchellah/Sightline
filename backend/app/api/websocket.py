@@ -9,11 +9,12 @@ router = APIRouter()
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    print("✅ Client connected", flush=True)
+    user_id = websocket.query_params.get("user_id", "anonymous")
+    print(f"✅ Client connected (user_id={user_id})", flush=True)
 
     try:
         service = GeminiLiveService()
-        async with service.connect() as session:
+        async with service.connect(user_id=user_id) as session:
             await websocket.send_text(json.dumps({
                 "type": "status",
                 "data": "connected"

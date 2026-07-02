@@ -8,7 +8,18 @@ export type WSMessage = {
   data: string
 }
 
-const WS_URL = 'wss://sightline-backend-59597652459.us-east4.run.app/ws'
+const WS_URL = 'wss://sightline-backend-59597652459.europe-west1.run.app/ws'
+const USER_ID_KEY = 'sightline_user_id'
+
+function getOrCreateUserId(): string {
+  if (typeof window === 'undefined') return 'anonymous'
+  let id = window.localStorage.getItem(USER_ID_KEY)
+  if (!id) {
+    id = crypto.randomUUID()
+    window.localStorage.setItem(USER_ID_KEY, id)
+  }
+  return id
+}
 
 export function useWebSocket() {
   const [status, setStatus] = useState<WSStatus>('connecting')
@@ -30,7 +41,8 @@ export function useWebSocket() {
     setIsConnected(false)
 
     try {
-      const ws = new WebSocket(WS_URL)
+      const userId = getOrCreateUserId()
+      const ws = new WebSocket(`${WS_URL}?user_id=${encodeURIComponent(userId)}`)
       wsRef.current = ws
 
       ws.onopen = () => {

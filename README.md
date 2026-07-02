@@ -13,8 +13,8 @@ SightLine runs continuously. Point your camera, speak naturally, and Gemini sees
 
 ## Live Demo
 
-**App:** https://sightline-frontend-59597652459.us-east4.run.app  
-**API docs:** https://sightline-backend-59597652459.us-east4.run.app/docs  
+**App:** https://sightline-frontend-59597652459.europe-west1.run.app  
+**API docs:** https://sightline-backend-59597652459.europe-west1.run.app/docs  
 **Demo video:** [Watch on YouTube](https://www.youtube.com/watch?v=hW1gJ22O3Zs)
 
 ---
@@ -99,7 +99,7 @@ The backend connects to Vertex AI via Application Default Credentials — no API
 self.client = genai.Client(
     vertexai=True,
     project="sightline-2026",
-    location="us-east4"
+    location="europe-west1"
 )
 ```
 
@@ -112,7 +112,7 @@ self.client = genai.Client(
 - **AI**: Gemini Live (`gemini-2.0-flash-live-001`) via Vertex AI
 - **Auth**: Application Default Credentials (no exposed keys)
 - **Transport**: WebSocket — JSON + base64 encoded audio
-- **Hosting**: Google Cloud Run, region `us-east4`
+- **Hosting**: Google Cloud Run, region `europe-west1`
 
 ---
 
