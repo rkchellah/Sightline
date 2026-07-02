@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCamera } from '@/hooks/useCamera';
+import { useScreenShare } from '@/hooks/useScreenShare';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { CameraView } from '@/components/CameraView';
@@ -10,6 +11,7 @@ import { VoiceOverlay } from '@/components/VoiceOverlay';
 
 export default function Home() {
   const { videoRef, isListening, facingMode, startCamera, stopCamera, toggleCamera, captureFrame, getAudioStream } = useCamera();
+  const { isSharing, isSupported: canShareScreen, startScreenShare, stopScreenShare } = useScreenShare();
   const { isConnected, sendAudio, sendFrame, messages } = useWebSocket();
   const { playAudio, isSpeaking, isSpeakingRef } = useAudioPlayer();
 
@@ -17,6 +19,8 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [displayMessages, setDisplayMessages] = useState<string[]>([]);
   const [sessionMode, setSessionMode] = useState('READY');
+  const [videoSource, setVideoSource] = useState<'camera' | 'screen'>('camera');
+  const [shareRequested, setShareRequested] = useState(false);
 
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -35,6 +39,10 @@ export default function Home() {
       setIsProcessing(false);
       console.log('🎤 Gemini done — mic reopened');
     }
+    if (last.type === 'screen_share_request') {
+      setShareRequested(true);
+      console.log('🖥️ Gemini requested screen share — awaiting user approval');
+    }
   }, [messages, playAudio]);
 
   useEffect(() => {
@@ -50,11 +58,12 @@ export default function Home() {
   useEffect(() => {
     if (!isSessionActive) return;
     frameIntervalRef.current = setInterval(() => {
-      const frame = captureFrame();
+      // Screens need more pixels than camera scenes for text legibility
+      const frame = captureFrame(videoSource === 'screen' ? 1280 : 640);
       if (frame) sendFrame(frame);
     }, 1500);
     return () => { if (frameIntervalRef.current) clearInterval(frameIntervalRef.current); };
-  }, [isSessionActive, captureFrame, sendFrame]);
+  }, [isSessionActive, captureFrame, sendFrame, videoSource]);
 
   useEffect(() => {
     if (!isSessionActive) return;
@@ -99,11 +108,34 @@ export default function Home() {
     setDisplayMessages([]);
   };
 
+  // Put the camera stream back into the video element after sharing ends
+  const revertToCamera = useCallback(() => {
+    setVideoSource('camera');
+    const cam = getAudioStream();
+    if (videoRef.current && cam) videoRef.current.srcObject = cam;
+  }, [getAudioStream, videoRef]);
+
+  const handleShareScreen = async () => {
+    const stream = await startScreenShare(revertToCamera);
+    if (!stream) return; // user dismissed the browser picker
+    setShareRequested(false);
+    setVideoSource('screen');
+    if (videoRef.current) videoRef.current.srcObject = stream;
+  };
+
+  const handleStopShare = () => {
+    stopScreenShare();
+    revertToCamera();
+  };
+
   const handleStop = () => {
     setIsSessionActive(false);
     setIsProcessing(false);
     setSessionMode('READY');
     setDisplayMessages([]);
+    setShareRequested(false);
+    stopScreenShare();
+    setVideoSource('camera');
     if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     if (processorRef.current) processorRef.current.disconnect();
@@ -343,6 +375,62 @@ export default function Home() {
           animation:speakBorder 1.5s ease-in-out infinite;
         }
 
+        /* 🟠 Amber border + pill while the screen is shared — consent must always be visible */
+        @keyframes shareBorder {
+          0%,100%{box-shadow:inset 0 0 0 0 rgba(251,191,36,0)}
+          50%{box-shadow:inset 0 0 40px rgba(251,191,36,0.12)}
+        }
+        .sl-share-border {
+          position:fixed; inset:0; pointer-events:none; z-index:16;
+          border:2px solid rgba(251,191,36,0.45);
+          animation:shareBorder 2s ease-in-out infinite;
+        }
+        .sl-share-pill {
+          position:fixed; top:17px; left:50%; transform:translateX(-50%);
+          display:flex; align-items:center; gap:6px; z-index:100;
+          background:#000; border:1px solid rgba(251,191,36,0.6);
+          padding:5px 12px; border-radius:999px;
+        }
+        .sl-share-pill-dot { width:7px; height:7px; border-radius:50%; background:#fbbf24; animation:livePulse 1.2s ease-in-out infinite; flex-shrink:0; }
+        .sl-share-pill-label { font-family:'DM Mono',monospace; font-size:0.55rem; letter-spacing:0.28em; color:#fbbf24; text-transform:uppercase; }
+
+        /* Screen share approval overlay (shown when Gemini requests to see the screen) */
+        .sl-share-request {
+          position:fixed; inset:0; z-index:150;
+          display:flex; align-items:center; justify-content:center;
+          background:rgba(0,0,0,0.65); animation:fadeIn 0.3s ease;
+        }
+        .sl-share-request-card {
+          display:flex; flex-direction:column; align-items:center; gap:18px;
+          background:#0f0f14; border:1px solid rgba(251,191,36,0.35);
+          border-radius:16px; padding:36px 44px; text-align:center; max-width:400px; margin:0 20px;
+        }
+        .sl-share-request-title { font-family:'DM Mono',monospace; font-size:0.7rem; letter-spacing:0.25em; color:#fbbf24; text-transform:uppercase; }
+        .sl-share-request-text { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:1rem; color:rgba(255,255,255,0.6); line-height:1.5; }
+        .sl-share-approve-btn {
+          font-family:'DM Mono',monospace; font-size:0.7rem; letter-spacing:0.3em;
+          text-transform:uppercase; background:rgba(251,191,36,0.1);
+          border:1px solid rgba(251,191,36,0.6); color:#fbbf24;
+          padding:14px 36px; border-radius:999px; cursor:pointer; transition:all 0.3s ease;
+        }
+        .sl-share-approve-btn:hover { background:rgba(251,191,36,0.2); }
+        .sl-share-dismiss-btn {
+          font-family:'DM Mono',monospace; font-size:0.58rem; letter-spacing:0.2em;
+          text-transform:uppercase; background:transparent; border:none;
+          color:rgba(255,255,255,0.3); cursor:pointer;
+        }
+        .sl-share-dismiss-btn:hover { color:rgba(255,255,255,0.6); }
+
+        /* Share screen control button */
+        .sl-share-btn {
+          font-family:'DM Mono',monospace; font-size:0.65rem; letter-spacing:0.3em;
+          text-transform:uppercase; background:transparent;
+          border:1px solid rgba(251,191,36,0.35); color:rgba(251,191,36,0.8);
+          padding:13px 28px; border-radius:999px; cursor:pointer;
+          transition:all 0.3s ease; white-space:nowrap;
+        }
+        .sl-share-btn:hover { border-color:rgba(251,191,36,0.7); background:rgba(251,191,36,0.07); }
+
         .sl-waveform {
           position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
           display:flex; align-items:center; gap:4px; z-index:50;
@@ -442,7 +530,7 @@ export default function Home() {
         {/* ACTIVE */}
         {isSessionActive && (
           <>
-            <CameraView videoRef={videoRef} />
+            <CameraView videoRef={videoRef} fit={videoSource === 'screen' ? 'contain' : 'cover'} />
             <AudioVisualizer isListening={isListening} isSpeaking={isSpeaking} />
             <VoiceOverlay messages={displayMessages} />
             {isSpeaking && (
@@ -462,11 +550,50 @@ export default function Home() {
                 </div>
               </>
             )}
+
+            {/* Screen sharing — always-visible consent indicators */}
+            {isSharing && (
+              <>
+                <div className="sl-share-border" />
+                <div className="sl-share-pill">
+                  <div className="sl-share-pill-dot" />
+                  <span className="sl-share-pill-label">Screen Shared</span>
+                </div>
+              </>
+            )}
+
+            {/* Approval overlay when Gemini asks to see the screen */}
+            {shareRequested && !isSharing && (
+              <div className="sl-share-request">
+                <div className="sl-share-request-card">
+                  <span className="sl-share-request-title">Screen Share Request</span>
+                  <p className="sl-share-request-text">
+                    Your companion is asking to see your screen. Nothing is shared until you approve.
+                  </p>
+                  <button className="sl-share-approve-btn" onClick={handleShareScreen}>
+                    Approve &amp; Share
+                  </button>
+                  <button className="sl-share-dismiss-btn" onClick={() => setShareRequested(false)}>
+                    Not now
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="sl-controls">
               <button className="sl-stop-btn" onClick={handleStop}>STOP</button>
-              <button className="sl-flip-btn" onClick={toggleCamera}>
-                {facingMode === 'environment' ? 'FRONT CAM' : 'BACK CAM'}
-              </button>
+              {!isSharing && (
+                <button className="sl-flip-btn" onClick={toggleCamera}>
+                  {facingMode === 'environment' ? 'FRONT CAM' : 'BACK CAM'}
+                </button>
+              )}
+              {canShareScreen && (
+                isSharing ? (
+                  <button className="sl-share-btn" onClick={handleStopShare}>STOP SHARING</button>
+                ) : (
+                  <button className="sl-share-btn" onClick={handleShareScreen}>SHARE SCREEN</button>
+                )
+              )}
             </div>
           </>
         )}

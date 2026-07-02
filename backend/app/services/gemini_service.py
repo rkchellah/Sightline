@@ -3,10 +3,27 @@ from google.genai import types
 from app.core.config import settings
 from app.services.memory_service import memory_service
 from contextlib import asynccontextmanager
+import asyncio
 import base64
 
 SYSTEM_PROMPT = """You are a warm, helpful AI companion that can see
-through the camera and hear the user in real time.
+and hear the user in real time. Your view may be their camera (the
+physical world) or their shared screen (documents, notes, apps,
+webpages) — you can tell from what the frames look like.
+
+When viewing a shared screen: read on-screen text accurately, explain
+what is shown, and guide the user step by step when they ask what to
+do next. Connect what is on screen to things you saw or discussed
+earlier when relevant.
+
+You have a screen tool:
+- Call request_screen_share when the user asks you to look at their
+  screen, notes, or something on their device (e.g. "look at my
+  screen", "check my notes", "can you see this document"). The tool
+  shows a share button in the app — you cannot see the screen until
+  the user taps it. After calling it, briefly tell the user to tap
+  the share button to approve. Never claim you can already see the
+  screen before they approve.
 
 You have two memory tools:
 - Call remember_this only when the user explicitly asks you to
@@ -44,6 +61,10 @@ class GeminiLiveService:
 
     @asynccontextmanager
     async def connect(self, user_id: str = "anonymous"):
+        # Events that tool handlers want forwarded to the browser client
+        # (drained and yielded by GeminiSession.receive()).
+        client_events: asyncio.Queue = asyncio.Queue()
+
         async def remember_this(fact: str) -> str:
             """Save a short piece of personal information the user wants
             you to remember for future conversations — e.g. a place, a
@@ -70,9 +91,22 @@ class GeminiLiveService:
             print(f"🧠 memory_recalled: {results}")
             return "\n".join(results) if results else "No relevant memories found."
 
+        async def request_screen_share() -> str:
+            """Ask the user to share their screen. Shows a share button
+            in the app that the user must tap to approve — screen
+            sharing can never start without their explicit approval.
+            """
+            await client_events.put({"type": "screen_share_request", "data": ""})
+            print("🖥️ screen_share_requested")
+            return (
+                "A share button is now shown to the user. Tell them to "
+                "tap it to approve. You cannot see the screen yet."
+            )
+
         tool_handlers = {
             "remember_this": remember_this,
             "recall_memories": recall_memories,
+            "request_screen_share": request_screen_share,
         }
 
         config = types.LiveConnectConfig(
@@ -88,18 +122,24 @@ class GeminiLiveService:
                     )
                 )
             ),
-            tools=[remember_this, recall_memories],
+            tools=[remember_this, recall_memories, request_screen_share],
         )
         async with self.client.aio.live.connect(
             model=self.model, config=config
         ) as session:
-            yield GeminiSession(session, tool_handlers)
+            yield GeminiSession(session, tool_handlers, client_events)
 
 
 class GeminiSession:
-    def __init__(self, session, tool_handlers: dict | None = None):
+    def __init__(
+        self,
+        session,
+        tool_handlers: dict | None = None,
+        client_events: asyncio.Queue | None = None,
+    ):
         self.session = session
         self.tool_handlers = tool_handlers or {}
+        self.client_events = client_events
 
     async def send_audio(self, audio_bytes: bytes):
         await self.session.send(
@@ -149,6 +189,11 @@ class GeminiSession:
                             await self.session.send_tool_response(
                                 function_responses=function_responses
                             )
+                        # Forward any messages tool handlers queued for
+                        # the browser (e.g. screen_share_request).
+                        if self.client_events:
+                            while not self.client_events.empty():
+                                yield self.client_events.get_nowait()
                         continue
 
                     if not hasattr(response, "server_content"):

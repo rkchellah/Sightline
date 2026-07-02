@@ -86,15 +86,20 @@ export function useCamera(onAudioChunk?: (base64: string) => void) {
     }
   }, [facingMode, isActive, stopCamera, startCamera])
 
-  const captureFrame = useCallback((): string | null => {
+  // maxWidth: 640 is enough for camera scenes; screen shares pass 1280
+  // so on-screen text stays legible for Gemini.
+  const captureFrame = useCallback((maxWidth: number = 640): string | null => {
     const video = videoRef.current
     if (!video || !isActive || video.readyState < 2) return null
+    const vw = video.videoWidth || 640
+    const vh = video.videoHeight || 480
+    const scale = Math.min(1, maxWidth / vw)
     const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth || 640
-    canvas.height = video.videoHeight || 480
+    canvas.width = Math.round(vw * scale)
+    canvas.height = Math.round(vh * scale)
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
-    ctx.drawImage(video, 0, 0)
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     return canvas.toDataURL('image/jpeg', 0.6).split(',')[1]
   }, [isActive])
 

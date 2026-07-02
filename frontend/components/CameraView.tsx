@@ -3,9 +3,11 @@ import { RefObject } from 'react'
 
 interface CameraViewProps {
   videoRef: RefObject<HTMLVideoElement>
+  // 'cover' for camera feeds, 'contain' for screen shares so nothing is cropped
+  fit?: 'cover' | 'contain'
 }
 
-export function CameraView({ videoRef }: CameraViewProps) {
+export function CameraView({ videoRef, fit = 'cover' }: CameraViewProps) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0, background: '#000' }}>
       <video
@@ -20,7 +22,7 @@ export function CameraView({ videoRef }: CameraViewProps) {
         style={{
           position: 'absolute', top: 0, left: 0,
           width: '100%', height: '100%',
-          objectFit: 'cover', zIndex: 1,
+          objectFit: fit, zIndex: 1,
         }}
       />
       <div style={{
